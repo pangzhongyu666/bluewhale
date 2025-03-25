@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * @Author: DingXiaoyu
  * @Date: 0:17 2023/11/26
  * 这个类定制了一个登录的拦截器，
  * SpringBoot的拦截器标准为HandlerInterceptor接口，

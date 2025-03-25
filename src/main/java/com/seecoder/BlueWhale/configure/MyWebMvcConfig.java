@@ -6,7 +6,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * @Author: DingXiaoyu
  * @Date: 0:17 2023/11/26
  *
  * 这个类实现了WebMvcConfigurer接口，

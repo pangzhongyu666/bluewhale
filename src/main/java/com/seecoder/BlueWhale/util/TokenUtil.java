@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 
 /**
- * @Author: DingXiaoyu
  * @Date: 0:28 2023/11/26
  * 这是一个token的工具类，
  * 设置了过期时间为1天。

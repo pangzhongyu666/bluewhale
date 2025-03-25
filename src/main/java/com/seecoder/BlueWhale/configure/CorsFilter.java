@@ -16,7 +16,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * @Author: DingXiaoyu
  * @Date: 19:17 2023/12/5
  * 在SpringBoot过滤器中配置跨域，
  * 跨域配置不能和拦截器写一起，

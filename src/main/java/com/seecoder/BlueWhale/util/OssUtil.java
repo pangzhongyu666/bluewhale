@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.util.Date;
 
 /**
- * @Author: DingXiaoyu
  * @Date: 12:00 2023/12/13
  * 这个类实现了文件上传。
  * @ConfigurationProperties注解能够读取配置文件。

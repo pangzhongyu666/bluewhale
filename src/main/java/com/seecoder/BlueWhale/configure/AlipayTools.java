@@ -62,7 +62,6 @@ public class AlipayTools {
     private static final Logger logger = LoggerFactory.getLogger(AlipayTools.class);
 
     /**
-     * @Author: DingXiaoyu
      * @Date: 11:25 2024/1/31
      * 使用支付宝沙箱
      * 使用时可以根据自己的需要做修改，包括参数名、返回值、具体实现
