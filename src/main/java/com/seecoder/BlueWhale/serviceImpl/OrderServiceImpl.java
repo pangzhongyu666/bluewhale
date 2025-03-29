@@ -45,10 +45,6 @@ public class OrderServiceImpl implements OrderService {
 				private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
 				@Override
-				@Caching(evict ={
-												@CacheEvict(value = "orders",allEntries = true),
-												@CacheEvict(value = "stores",allEntries = true),
-				})
 				public OrderVO create(OrderVO orderVO) {
 								int quantity = orderVO.getQuantity();
 								Product product =  productRepository.findByProductId(orderVO.getProductId());
@@ -77,28 +73,23 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				@Cacheable(value = "orders")
 				public List<OrderVO> getUserOrders(Integer userId) {//用户订单界面
 								return orderRepository.findByUserId(userId).stream().map(Order::toVO).collect(Collectors.toList());
 				}
 				@Override
-				@Cacheable(value = "orders")
 				public List<OrderVO> getStoreOrders(Integer storeId) {//门店工作人员订单界面
 								return orderRepository.findByStoreId(storeId).stream().map(Order::toVO).collect(Collectors.toList());
 				}
 				@Override
-				@Cacheable(value = "orders")
 				public List<OrderVO> getProductOrders(Integer productId) {//门店工作人员订单界面
 								return orderRepository.findByProductId(productId).stream().map(Order::toVO).collect(Collectors.toList());
 				}
 				@Override
-				@Cacheable(value = "orders")
 				public List<OrderVO> getAllOrders() {//商场管理员与经理订单界面
 								return orderRepository.findAll().stream().map(Order::toVO).collect(Collectors.toList());
 				}
 
 				@Override
-				@CacheEvict(value = "orders",allEntries = true)
 				public Boolean updateInformation(OrderVO orderVO) {
 								Order order = orderRepository.findById(orderVO.getOrderId()).orElse(null);
 								if(order == null){
@@ -128,10 +119,6 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				@Caching(evict ={
-												@CacheEvict(value = "orders",allEntries = true),
-												@CacheEvict(value = "coupons",allEntries = true),
-				})
 				public void paySuccess(Integer orderId, Double paid, Integer couponId) {
 								Order order = orderRepository.findById(orderId).get();
 								if(order.getDeliveryOption() == DeliveryEnum.DELIVERY)
@@ -151,10 +138,6 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				@Caching(evict ={
-												@CacheEvict(value = "orders",allEntries = true),
-												@CacheEvict(value = "stores",allEntries = true),
-				})
 				public void refundSuccess(Integer orderId) {
 								Order order = orderRepository.findById(orderId).get();
 								order.setState(OrderStateEnum.REFUND);//订单状态设为退款
@@ -182,10 +165,6 @@ public class OrderServiceImpl implements OrderService {
 
 				@Override
 				@Scheduled(fixedRate = 60000) // 每分钟执行一次
-				@Caching(evict ={
-												@CacheEvict(value = "orders",allEntries = true),
-												@CacheEvict(value = "stores",allEntries = true),
-				})
 				public void cancelUnpaidOrders() {
 								logger.info("执行定时取消未支付订单任务");
 								List<Order> unpaidOrders = orderRepository.findByState(OrderStateEnum.UNPAID);

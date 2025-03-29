@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -28,6 +29,8 @@ public class ProductVO {
 
 				private List<String> productImages;
 
+				private List<String> productImageForRedis;
+
 				private Integer storeId;//所属商店
 
 				private Double productRating;
@@ -46,6 +49,7 @@ public class ProductVO {
 								product.setPrice(this.price);
 								product.setInventory(this.inventory);
 								product.setProductImages(this.productImages);
+								product.setProductImageForRedis(new ArrayList<>(this.productImages)); // 复制列表，避免 Hibernate 代理
 								product.setStoreId(this.storeId);
 								product.setDescription(this.description);
 								product.setProductRating(this.productRating);

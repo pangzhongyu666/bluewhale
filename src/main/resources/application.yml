@@ -9,9 +9,19 @@ spring:
   redis:
     host: localhost
     port: 6379
-    timeout: 6000 # 连接超时时间
-    cache:
-      type: redis # 指定缓存类型为Redis
+    lecture:
+      pool:
+        max-active: 8 # 最大连接数
+        max-idle: 8 # 最大空闲连接数
+        min-idle: 0 # 最小空闲连接数
+        max-wait: 100 # 最大等待时间
+  kafka:
+    bootstrap-servers: localhost:9092
+    #producer:
+    consumer:
+      auto-offset-reset: earliest # 重置偏移量为最早的偏移量,如果消费组id已经消费过了,该设置不会生效,需要重置消费组id,才能从头消费
+    template:
+      default-topic: kafka-test # 默认的topic
 
 server:
   port: 8080
@@ -36,8 +46,6 @@ alipay:
   server-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do
 
 logging:
-  level:
-    root: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
   file:
@@ -47,7 +55,6 @@ logging:
       max-file-size: 10MB
       file-name-pattern: "logs/bluewhale-%d{yyyy-MM-dd-HH-mm}.%i.log"
       max-history: 30
-
 
 
 

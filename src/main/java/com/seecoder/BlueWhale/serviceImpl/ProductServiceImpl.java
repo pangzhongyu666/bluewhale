@@ -3,6 +3,7 @@ package com.seecoder.BlueWhale.serviceImpl;
 import com.seecoder.BlueWhale.enums.ProductTypeEnum;
 import com.seecoder.BlueWhale.exception.BlueWhaleException;
 import com.seecoder.BlueWhale.po.Product;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -13,6 +14,7 @@ import com.seecoder.BlueWhale.repository.ProductRepository;
 import com.seecoder.BlueWhale.service.ProductService;
 import com.seecoder.BlueWhale.vo.ProductVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
 				@Autowired
 				ProductRepository productRepository;
+				@Autowired
+				private RedisTemplate redisTemplate;
 				private static final Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
 
 				@Override
@@ -34,14 +38,35 @@ public class ProductServiceImpl implements ProductService {
 								return true;
 				}
 
+
 				@Override
+
 				public ProductVO getInfo(Integer productId) {
+								String key = "ProductInfo" + productId;
+								// 先从redis中获取商品信息
+								ProductVO productInRedis = (ProductVO) redisTemplate.opsForValue().get(key);
+
+								if (productInRedis != null) {
+												productInRedis.setProductImages(productInRedis.getProductImageForRedis());
+												productInRedis.setProductImageForRedis(null);
+												logger.info("从redis中获取商品信息");
+												return productInRedis;
+								}
+
 								Product product = productRepository.findByProductId(productId);
-								if(product==null){
+								if (product == null) {
 												throw BlueWhaleException.productNotExists();
 								}
-								return product.toVO();
+
+
+								// 将商品信息存入redis
+								ProductVO productVO = product.toVO();
+								productVO.setProductImages(null);
+								redisTemplate.opsForValue().set(key, productVO);
+								logger.info("从数据库中获取商品信息");
+								return productVO;
 				}
+
 
 				@Override
 				public Boolean updateInformation(ProductVO productVO) {
@@ -57,6 +82,10 @@ public class ProductServiceImpl implements ProductService {
 								Optional.ofNullable(productVO.getDescription()).ifPresent(product::setDescription);
 								productRepository.save(product);
 								logger.info("更新商品信息");
+
+								//删除redis缓存
+								String key = "ProductInfo" + product.getProductId();
+								redisTemplate.delete(key);
 								return true;
 				}
 

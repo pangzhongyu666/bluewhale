@@ -13,6 +13,7 @@ import com.seecoder.BlueWhale.vo.ReviewVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,9 +33,23 @@ public class ReviewServiceImpl implements ReviewService {
 				StoreService storeService;
 				private static final Logger logger = LoggerFactory.getLogger(ReviewServiceImpl.class);
 
+				@Autowired
+				private RedisTemplate redisTemplate;
 				@Override
 				public List<ReviewVO> getReviews(Integer productId) {//获取商品评论
-								return reviewRepository.findByProductId(productId).stream().map(Review::toVO).collect(Collectors.toList());
+								//从redis hash缓存中获取
+								String key = "reviewsOfProduct" + productId;
+								List<ReviewVO> reviewList = (List<ReviewVO>) redisTemplate.opsForHash().get(key, "reviewList");
+								if(reviewList != null){
+												logger.info("从redis缓存中获取评论" + productId);
+												return reviewList;
+								}
+								//从数据库中获取
+								reviewList = reviewRepository.findByProductId(productId).stream().map(Review::toVO).collect(Collectors.toList());
+								//放入redis hash缓存中
+								redisTemplate.opsForHash().put(key, "reviewList", reviewList);
+								logger.info("从数据库中获取评论" + productId);
+								return reviewList;
 				}
 
 				@Override
@@ -60,7 +75,7 @@ public class ReviewServiceImpl implements ReviewService {
 								return true;
 				}
 
-				private void updateReview(Store store) {
+				public void updateReview(Store store) {
 								List<ProductVO> productList = storeService.getOneStoreProducts(store.getStoreId());
 								double storeRating = productList//商店评分
 																.stream()
@@ -77,9 +92,13 @@ public class ReviewServiceImpl implements ReviewService {
 								store.setStoreRating(storeRating);
 								store.setStoreRatingCount(storeRatingCount);
 								storeRepository.save(store);
+
+								//删除redis缓存
+								String key = "StoreInfo" + store.getStoreId();
+								redisTemplate.delete(key);
 				}
 
-				private void updateReview(Product product) {
+				public void updateReview(Product product) {
 								List<Review> reviewList = reviewRepository.findByProductId(product.getProductId());
 								double productRating = reviewList//商品评分
 																.stream()
@@ -92,6 +111,10 @@ public class ReviewServiceImpl implements ReviewService {
 								product.setProductRating(productRating);
 								product.setProductRatingCount(productCount);
 								productRepository.save(product);
+
+								//删除redis缓存
+								String key = "ProductInfo" + product.getProductId();
+								redisTemplate.delete(key);
 				}
 
 

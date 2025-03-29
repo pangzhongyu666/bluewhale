@@ -23,9 +23,6 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 
 /**
- * @Author: GaoZhaolong
- * @Date: 14:46 2023/11/26
- *
  * 注册登录功能实现
 */
 @Service
@@ -64,16 +61,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String login(String phone, String password) {
-        System.out.println("加密密码:" + password);
-        String newPassword =  RSAUtil.decrypt(password);
-        System.out.println("解密密码:" + newPassword);
-        User user = userRepository.findByPhoneAndPassword(phone, newPassword);
+        //System.out.println("加密密码:" + password);
+        //String newPassword =  RSAUtil.decrypt(password);
+        //System.out.println("解密密码:" + newPassword);
+        //User user = userRepository.findByPhoneAndPassword(phone, newPassword);
+        User user = userRepository.findByPhoneAndPassword(phone, password);
         if (user == null) {
             throw BlueWhaleException.phoneOrPasswordError();
         }
         logger.info("用户" + user.getId() + "登录");
         return tokenUtil.getToken(user);
     }
+
 
     @Override
     public UserVO getInformation() {
@@ -82,7 +81,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @CacheEvict(value = "User", allEntries = true)//更新信息后清除缓存重新加载
     public Boolean updateInformation(UserVO userVO) {
         User user=securityUtil.getCurrentUser();
         if (userVO.getPassword()!=null){
@@ -100,9 +98,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Cacheable(value = "User",key = "#userId")//记录用户信息到缓存中
     public UserVO getUserInformation(Integer userId) {
         return userRepository.getOne(userId).toVO();        
     }
+
+
 
 }

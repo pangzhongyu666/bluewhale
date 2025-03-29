@@ -37,6 +37,9 @@ public class Review {
 				@CollectionTable(name = "review_image_urls", joinColumns = @JoinColumn(name = "review_id"))
 				private List<String> reviewImages;
 
+				@Transient
+				private List<String> reviewImageForRedis;
+
 				@Basic
 				@Column(name = "product_id")
 				private Integer productId;

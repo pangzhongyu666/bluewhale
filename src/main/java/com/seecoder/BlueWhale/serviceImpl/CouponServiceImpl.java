@@ -42,7 +42,6 @@ public class CouponServiceImpl implements CouponService {
     private static final Logger logger = LoggerFactory.getLogger(CouponServiceImpl.class);
 
     @Override
-    @CacheEvict(value = "couponsGroups", allEntries = true)
     public  Boolean createGroup(CouponGroupVO couponGroupVO) {
         Store store = storeRepository.findByStoreId(couponGroupVO.getStoreId());
         if(store == null && couponGroupVO.getStoreId() != 0){
@@ -55,32 +54,27 @@ public class CouponServiceImpl implements CouponService {
     }
 
     @Override
-    @Cacheable(value = "coupons", key = "#userId")
     public List<CouponVO> getUserCoupons(Integer userId) {//获取用户未使用的优惠券
         return couponRepository.findByUserId(userId).stream().filter(Coupon -> Coupon.getState() != CouponStateEnum.USED).map(Coupon::toVO).collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "couponsGroups")
     public List<CouponGroupVO> getAllCouponsGroups() {
         return couponGroupRepository.findAll().stream().map(CouponGroup::toVO).collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "couponsGroups")
     public List<CouponGroupVO> getStoreCouponGroups(Integer storeId) {
         return couponGroupRepository.findByStoreId(storeId).stream().map(CouponGroup::toVO).collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "couponsGroups")
     public CouponGroupVO getCouponGroupInfo(Integer couponGroupId) {
         return couponGroupRepository.findById(couponGroupId).get().toVO();
     }
 
 
     @Override
-    @Cacheable(value = "price")
     public Double couponApply(Integer orderId, Integer couponId) {
         //每次选中优惠券就会调用这个方法计算优惠后价格
         Order order = orderRepository.findById(orderId).orElse(null);
@@ -113,10 +107,6 @@ public class CouponServiceImpl implements CouponService {
     }
 
     @Override
-    @Caching(evict ={
-            @CacheEvict(value = "coupons", key = "#userId"),
-            @CacheEvict(value = "couponsGroups",allEntries = true),
-    })
     public Boolean claimCoupon(Integer userId, Integer couponGroupId) {
         List<CouponVO> couponVOList = couponRepository.findByCouponGroupId(couponGroupId).stream().map(Coupon::toVO).collect(Collectors.toList());
         for(CouponVO couponVO : couponVOList){

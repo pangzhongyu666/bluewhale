@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,8 +28,10 @@ public class StoreServiceImpl implements StoreService {
 				StoreRepository storeRepository;
 				private static final Logger logger = LoggerFactory.getLogger(StoreServiceImpl.class);
 
+				@Autowired
+				private RedisTemplate redisTemplate;
+
 				@Override
-				@CacheEvict(value = "stores", allEntries = true)
 				public Boolean create(StoreVO storeVO){
 								Store store = storeRepository.findByName(storeVO.getName());
 								if(store != null){
@@ -40,17 +44,26 @@ public class StoreServiceImpl implements StoreService {
 
 				}
 				@Override
-				@Cacheable(value = "stores")
 				public List<StoreVO> getAllStores() {
 								return storeRepository.findAll().stream().map(Store::toVO).collect(Collectors.toList());
 				}
 				@Override
-				@Cacheable(value = "stores",key = "#storeId")
 				public StoreVO getInfo(Integer storeId) {
+								String key = "StoreInfo" + storeId;
+								// 先从redis中获取商店信息
+								StoreVO storeInRedis = (StoreVO) redisTemplate.opsForValue().get(key);
+								// 如果redis中没有，再从数据库中获取
+								if(storeInRedis != null){
+												return storeInRedis;
+								}
+
+								// 从数据库中获取
 								Store store = storeRepository.findByStoreId(storeId);
 								if(store == null){
 												throw BlueWhaleException.storeNotExists();
 								}
+								// 存入redis
+								redisTemplate.opsForValue().set(key, store.toVO());
 								return store.toVO();
 				}
 				@Override

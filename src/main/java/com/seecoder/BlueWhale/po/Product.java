@@ -1,5 +1,6 @@
 package com.seecoder.BlueWhale.po;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.seecoder.BlueWhale.enums.ProductTypeEnum;
 import com.seecoder.BlueWhale.vo.ProductVO;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -54,8 +56,12 @@ public class Product {
 				private  Integer productRatingCount;
 
 				@ElementCollection
+				@JsonIgnore
 				@CollectionTable(name = "product_image_urls", joinColumns = @JoinColumn(name = "product_id"))
 				private List<String> productImages;
+
+				@Transient
+				private List<String> productImageForRedis;
 
 				@Basic
 				@Column(name = "store_id")
@@ -65,8 +71,6 @@ public class Product {
 				@Column(name = "sales")
 				private Integer sales;
 
-
-
 				public ProductVO toVO(){
 								ProductVO  productVO = new ProductVO();
 								productVO.setProductId(this.productId);
@@ -75,6 +79,7 @@ public class Product {
 								productVO.setType(this.type);
 								productVO.setInventory(this.inventory);
 								productVO.setProductImages(this.productImages);
+								productVO.setProductImageForRedis(new ArrayList<>(this.productImages)); // 复制列表，避免 Hibernate 代理
 								productVO.setStoreId(this.storeId);
 								productVO.setDescription(this.description);
 								productVO.setProductRating(this.productRating);
