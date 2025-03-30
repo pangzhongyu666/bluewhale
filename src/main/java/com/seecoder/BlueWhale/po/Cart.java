@@ -50,7 +50,7 @@ public class Cart {
 
     @ElementCollection
     @CollectionTable(name = "cart_order_id_list", joinColumns = @JoinColumn(name = "cart_id"))
-    private List<Integer> orderIdList;
+    private List<Long> orderIdList;
 
 
     public CartVO toVO() {

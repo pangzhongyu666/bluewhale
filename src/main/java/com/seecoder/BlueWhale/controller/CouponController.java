@@ -41,7 +41,7 @@ public class CouponController {
     }
 
     @PostMapping("/CouponApply")
-    public ResultVO<Double> couponApply(@RequestParam("orderId") Integer orderId, @RequestParam("couponId") Integer couponId)
+    public ResultVO<Double> couponApply(@RequestParam("orderId") Long orderId, @RequestParam("couponId") Integer couponId)
     {
         return ResultVO.buildSuccess(couponService.couponApply(orderId,couponId));
     }

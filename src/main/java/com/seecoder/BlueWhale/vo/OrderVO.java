@@ -13,7 +13,7 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 public class OrderVO {
-				private Integer orderId;
+				private Long orderId;
 
 				private String tradeName;
 

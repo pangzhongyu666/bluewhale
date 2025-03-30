@@ -28,7 +28,7 @@ public class CartVO {
         //被选中的商品列表
         private List<Integer> chooseList;
         //从购物车中同时创建的订单列表
-        private List<Integer> orderIdList;
+        private List<Long> orderIdList;
         public Cart toPO(){
                 Cart cart = new Cart();
                 cart.setCartId(this.cartId);

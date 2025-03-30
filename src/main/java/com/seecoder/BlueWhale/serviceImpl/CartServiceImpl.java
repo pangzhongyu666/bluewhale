@@ -148,7 +148,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public Boolean createOrders(Integer userId) {
         Cart cart = cartRepository.findByUserId(userId);
-        List<Integer> orderIdList = cart.getOrderIdList();
+        List<Long> orderIdList = cart.getOrderIdList();
         List<Integer> productList = cart.getProductIdList();
         List<Integer> productCountList = cart.getProductCountList();
         List<Integer> chooseList = cart.getChooseList();
@@ -203,7 +203,7 @@ public class CartServiceImpl implements CartService {
         List<Integer> newList = new ArrayList<>();
         cart.setProductIdList(newList);
         cart.setProductCountList(newList);
-        cart.setOrderIdList(newList);
+        cart.setOrderIdList(new ArrayList<>());
         cart.setTotalPrice(0);
         cartRepository.save(cart);
         return true;

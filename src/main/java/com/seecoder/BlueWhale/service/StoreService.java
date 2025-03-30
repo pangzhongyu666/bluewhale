@@ -15,4 +15,6 @@ public interface StoreService {
 				List<ProductVO> getOneStoreProducts(Integer storeId);
 
 				StoreVO getInfo(Integer storeId);
+
+				Boolean update(StoreVO storeVO);
 }

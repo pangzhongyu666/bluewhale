@@ -10,5 +10,6 @@ public interface CouponRepository extends JpaRepository<Coupon, Integer> {
 
     List<Coupon> findByUserId(Integer userId);
     List<Coupon> findByCouponGroupId(Integer couponGroupId);
+    Boolean existsByCouponGroupIdAndUserId(Integer couponGroupId, Integer userId);
 
 }

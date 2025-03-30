@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -20,6 +21,7 @@ public class ReviewVO {
 
 				private List<String> reviewImages;
 
+				private List<String> reviewImagesForRedis;
 
 				private Integer productId;
 
@@ -35,6 +37,7 @@ public class ReviewVO {
 								review.setProductId(this.productId);
 								review.setUserId(this.userId);
 								review.setReviewImages(this.getReviewImages());
+								review.setReviewImagesForRedis(new ArrayList<>(this.getReviewImages()));
 								review.setParentId(this.parentId);
 								return  review;
 				}

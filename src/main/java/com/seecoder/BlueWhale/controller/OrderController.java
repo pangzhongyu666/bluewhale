@@ -47,7 +47,7 @@ public class OrderController {
 				}
 
 				@GetMapping("/checkPaySuccess/{orderId}")
-				public ResultVO<Boolean> checkPaySuccess(@PathVariable(value="orderId")Integer orderId){
+				public ResultVO<Boolean> checkPaySuccess(@PathVariable(value="orderId")Long orderId){
 								return ResultVO.buildSuccess(orderService.checkPaySuccess(orderId));
 				}
 

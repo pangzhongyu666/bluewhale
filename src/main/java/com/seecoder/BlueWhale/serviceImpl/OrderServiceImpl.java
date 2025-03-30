@@ -13,6 +13,7 @@ import com.seecoder.BlueWhale.repository.OrderRepository;
 import com.seecoder.BlueWhale.repository.ProductRepository;
 import com.seecoder.BlueWhale.repository.StoreRepository;
 import com.seecoder.BlueWhale.service.OrderService;
+import com.seecoder.BlueWhale.util.RedisIdWorker;
 import com.seecoder.BlueWhale.vo.OrderVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,31 +43,38 @@ public class OrderServiceImpl implements OrderService {
 				@Autowired
 				CouponRepository couponRepository;
 
+				@Autowired
+				RedisIdWorker redisIdWorker;
 				private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
 				@Override
+				@Transactional
 				public OrderVO create(OrderVO orderVO) {
 								int quantity = orderVO.getQuantity();
-								Product product =  productRepository.findByProductId(orderVO.getProductId());
-								int inventory = product.getInventory();
-								if(inventory < quantity||inventory <= 0){//检测库存是否足够
+
+
+								int inventory =  productRepository.deductInventory(orderVO.getProductId(), quantity);
+								logger.info("库存剩余" + inventory);
+								if(inventory == 0){
 												throw BlueWhaleException.productInventoryShort();
 								}
-								product.setInventory(inventory - quantity);//库存减少
-								int productSales = product.getSales()!=null ? product.getSales()+ quantity: quantity;
-								product.setSales(productSales);//销量增加
+
+								Product product = productRepository.findByProductId(orderVO.getProductId());
+								product.setSales((product.getSales() != null ? product.getSales() : 0) + quantity);
+								productRepository.save(product);
+
 								Store store = storeRepository.findByStoreId(product.getStoreId());
 								int storeSales = store.getSales()!=null ? store.getSales()+ quantity: quantity;
 								store.setSales(storeSales);//销量增加
-								productRepository.save(product);
 								storeRepository.save(store);
 
-								if(orderVO.getStoreId()==null){
+								if(orderVO.getStoreId() == null){
 												orderVO.setStoreId(product.getStoreId());
 								}
+								orderVO.setOrderId(redisIdWorker.nextId("order"));
+								orderVO.setCreateTime(new Date());
+								orderVO.setState(OrderStateEnum.UNPAID);
 								Order order = orderVO.toPO();
-								order.setCreateTime(new Date());
-								order.setState(OrderStateEnum.UNPAID);
 								orderRepository.save(order);
 								logger.info("创建订单" + order.getOrderId() +"成功");
 								return order.toVO();
@@ -119,12 +127,12 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				public void paySuccess(Integer orderId, Double paid, Integer couponId) {
+				public void paySuccess(Long orderId, Double paid, Integer couponId) {
 								Order order = orderRepository.findById(orderId).get();
 								if(order.getDeliveryOption() == DeliveryEnum.DELIVERY)
-									order.setState(OrderStateEnum.UNSEND);//送货上门则变状态为未送货
+												order.setState(OrderStateEnum.UNSEND);//送货上门则变状态为未送货
 								else
-									order.setState(OrderStateEnum.UNGET);//到店取货则变状态为未取货
+												order.setState(OrderStateEnum.UNGET);//到店取货则变状态为未取货
 								order.setPaid(paid);
 
 
@@ -138,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				public void refundSuccess(Integer orderId) {
+				public void refundSuccess(Long orderId) {
 								Order order = orderRepository.findById(orderId).get();
 								order.setState(OrderStateEnum.REFUND);//订单状态设为退款
 
@@ -155,7 +163,7 @@ public class OrderServiceImpl implements OrderService {
 				}
 
 				@Override
-				public Boolean checkPaySuccess(Integer orderId) {
+				public Boolean checkPaySuccess(Long orderId) {
 								Order order = orderRepository.findById(orderId).orElse(null);
 								if(order == null){
 												throw BlueWhaleException.orderNotExists();

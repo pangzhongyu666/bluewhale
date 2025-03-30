@@ -19,11 +19,13 @@ import com.seecoder.BlueWhale.vo.CouponGroupVO;
 import com.seecoder.BlueWhale.vo.CouponVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -75,7 +77,7 @@ public class CouponServiceImpl implements CouponService {
 
 
     @Override
-    public Double couponApply(Integer orderId, Integer couponId) {
+    public Double couponApply(Long orderId, Integer couponId) {
         //每次选中优惠券就会调用这个方法计算优惠后价格
         Order order = orderRepository.findById(orderId).orElse(null);
         if(order == null){
@@ -108,37 +110,45 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public Boolean claimCoupon(Integer userId, Integer couponGroupId) {
-        List<CouponVO> couponVOList = couponRepository.findByCouponGroupId(couponGroupId).stream().map(Coupon::toVO).collect(Collectors.toList());
-        for(CouponVO couponVO : couponVOList){
-            if(Objects.equals(couponVO.getUserId(), userId)){//一个用户只能领取一张同一优惠券组的优惠券
-                return false;//返回false表示领取失败
-            }
+        //锁一个用户，防止一个用户并发抢券
+        // intern()是为了找常量池中的对象，避免每次都创建新对象
+
+        //先加锁再进入事务，提交事务后锁才会释放
+        //这个锁在集群环境下是无效的，因为锁是基于进程的，JVM常量池是基于进程的，所以需要使用分布式锁
+        synchronized (userId.toString().intern()) {
+            //自我调用，会导致事务失效
+            //解决方法：使用AopContext.currentProxy()获取代理对象，然后调用代理对象的方法
+            //这样就可以保证事务生效了
+            CouponService proxy = (CouponService)AopContext.currentProxy();
+            return proxy.checkAndClaimCoupon(userId, couponGroupId);
+        }
+    }
+    @Transactional
+    public Boolean checkAndClaimCoupon(Integer userId, Integer couponGroupId) {
+        if(checkCoupon(userId, couponGroupId)){
+            logger.info("用户" + userId + "已经领取过优惠券组" + couponGroupId);
+            return false;//一个用户只能领取一张同一优惠券组的优惠券
+        }
+
+        int couponAmount = couponGroupRepository.deductStock(couponGroupId);
+
+        if(couponAmount == 0){
+            logger.info("优惠券组" + couponGroupId + "库存不足");
+            throw new BlueWhaleException("优惠券不足");
         }
         CouponGroup couponGroup = couponGroupRepository.findById(couponGroupId).get();
-        if(couponGroup.getCouponsAmount() <= 0){//优惠券是否充足
-            throw BlueWhaleException.couponNotEnough();
-        }
-        couponGroup.setCouponsAmount(couponGroup.getCouponsAmount() - 1);//优惠券数目减少
-        couponGroup.setCouponGotAmount(couponGroup.getCouponGotAmount() + 1);//优惠券获取数增加
         CouponVO couponVO = new CouponVO();
         couponVO.setCouponGroupId(couponGroupId);
         couponVO.setUserId(userId);
         couponVO.setStoreId(couponGroup.getStoreId());
         couponVO.setState(CouponStateEnum.AVAILABLE);
         couponRepository.save(couponVO.toPO());
-        couponGroupRepository.save(couponGroup);
         logger.info("用户" + userId + "领取优惠券组" + couponGroupId + "中的优惠券");
         return true;
     }
 
     @Override
     public Boolean checkCoupon(Integer userId, Integer couponGroupId) {
-        List<CouponVO> couponVOList = couponRepository.findByCouponGroupId(couponGroupId).stream().map(Coupon::toVO).collect(Collectors.toList());
-        for(CouponVO couponVO : couponVOList){
-            if(Objects.equals(couponVO.getUserId(), userId)){
-                return false;//一个用户只能领取一张同一优惠券组的优惠券
-            }
-        }
-        return true;
+        return couponRepository.existsByCouponGroupIdAndUserId(couponGroupId, userId);
     }
 }

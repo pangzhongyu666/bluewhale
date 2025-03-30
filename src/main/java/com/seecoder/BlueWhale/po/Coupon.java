@@ -18,6 +18,7 @@ import javax.persistence.*;
         @Index(name = "idx_coupon_id", columnList = "coupon_id"),
         @Index(name = "idx_coupon_group_id", columnList = "coupon_group_id"),
         @Index(name = "idx_user_id", columnList = "user_id"),
+        @Index(name = "idx_c_u_id", columnList = "store_id,user_id"),
 
 })
 public class Coupon {
@@ -32,7 +33,7 @@ public class Coupon {
 
     @Basic
     @Column(name = "store_id")
-    private Integer storeId;//0表示全局
+    private Integer storeId; //0表示全局
 
     @Basic
     @Column(name = "state")

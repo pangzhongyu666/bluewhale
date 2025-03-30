@@ -16,6 +16,7 @@ import com.seecoder.BlueWhale.vo.ProductVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,11 +65,14 @@ public class ProductServiceImpl implements ProductService {
 								productVO.setProductImages(null);
 								redisTemplate.opsForValue().set(key, productVO);
 								logger.info("从数据库中获取商品信息");
-								return productVO;
+
+
+								return product.toVO();
 				}
 
 
 				@Override
+				@Transactional
 				public Boolean updateInformation(ProductVO productVO) {
 								Product product = productRepository.findByProductId(productVO.getProductId());
 								if(product==null){

@@ -19,7 +19,7 @@ public class AliPayController {
     }
 
     @PostMapping("/refund")
-    public ResultVO<Boolean> refund(@RequestParam("orderId")Integer orderId) {
+    public ResultVO<Boolean> refund(@RequestParam("orderId")Long orderId) {
         return ResultVO.buildSuccess(alipayTools.refund(orderId));
     }
     @PostMapping("/notify/{couponId}")

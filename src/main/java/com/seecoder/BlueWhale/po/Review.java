@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -38,7 +39,7 @@ public class Review {
 				private List<String> reviewImages;
 
 				@Transient
-				private List<String> reviewImageForRedis;
+				private List<String> reviewImagesForRedis;
 
 				@Basic
 				@Column(name = "product_id")
@@ -60,6 +61,7 @@ public class Review {
 								reviewVO.setProductId(this.productId);
 								reviewVO.setUserId(this.userId);
 								reviewVO.setReviewImages(this.getReviewImages());
+								reviewVO.setReviewImagesForRedis(new ArrayList<>(this.getReviewImages()));
 								reviewVO.setParentId(this.parentId);
 								return  reviewVO;
 				}

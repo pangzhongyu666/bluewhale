@@ -69,7 +69,7 @@ public class AlipayTools {
      * 返回的form是一个String类型的html页面
      */
     public String pay(String tradeName, String name , Double price, String path,Integer couponId){
-        Order order = orderRepository.findById(Integer.parseInt(tradeName)).orElse(null);
+        Order order = orderRepository.findById(Long.parseLong(tradeName)).orElse(null);
         if(order == null){//查看订单是否存在
             throw BlueWhaleException.orderNotExists();
         }
@@ -95,7 +95,7 @@ public class AlipayTools {
         }
         return form;
     }
-    public Boolean refund(Integer orderId) {
+    public Boolean refund(Long orderId) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if(order == null){
             throw BlueWhaleException.orderNotExists();
@@ -142,8 +142,8 @@ public class AlipayTools {
 
             String tradeName = params.get("out_trade_no");
             Double paid = Double.parseDouble(params.get("total_amount"));
-            orderService.paySuccess(Integer.parseInt(tradeName),paid,couponId);
-            Order order = orderRepository.findById(Integer.parseInt(tradeName)).get();
+            orderService.paySuccess(Long.parseLong(tradeName),paid,couponId);
+            Order order = orderRepository.findById(Long.parseLong(tradeName)).get();
             order.setTradeName(tradeName);
             orderRepository.save(order);
         }
@@ -191,7 +191,7 @@ public class AlipayTools {
             String tradeName = params.get("out_trade_no");
             Double paid = Double.parseDouble(params.get("total_amount"));
             Cart cart = cartRepository.findByCartId(cartId);
-            List<Integer> orderIdList = cart.getOrderIdList();
+            List<Long> orderIdList = cart.getOrderIdList();
             for(int i = 0; i < orderIdList.size(); i++){
                 Order order = orderRepository.findById(orderIdList.get(i)).get();
                 orderService.paySuccess(order.getOrderId(),order.getPaid(),0);

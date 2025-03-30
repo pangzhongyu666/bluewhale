@@ -24,10 +24,10 @@ import java.util.Date;
 }
 )
 public class  Order {
-				@GeneratedValue(strategy = GenerationType.IDENTITY)
+				//@GeneratedValue(strategy = GenerationType.IDENTITY)
 				@Id
 				@Column(name = "order_id")
-				private Integer orderId;
+				private Long orderId;
 
 				@Basic
 				@Column(name = "trade_name")

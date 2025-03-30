@@ -13,7 +13,7 @@ public interface CouponService {
 
     List<CouponVO> getUserCoupons(Integer userId);
 
-    Double couponApply(Integer orderId, Integer couponId);
+    Double couponApply(Long orderId, Integer couponId);
 
     Boolean claimCoupon(Integer userId, Integer couponGroupId);
     Boolean checkCoupon(Integer userId, Integer couponGroupId);
@@ -22,4 +22,6 @@ public interface CouponService {
     List<CouponGroupVO> getStoreCouponGroups(Integer storeId);
 
     CouponGroupVO getCouponGroupInfo(Integer couponGroupId);
+
+    Boolean checkAndClaimCoupon(Integer userId, Integer couponGroupId);
 }

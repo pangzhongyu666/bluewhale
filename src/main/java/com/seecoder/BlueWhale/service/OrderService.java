@@ -17,10 +17,10 @@ public interface OrderService {
 
 				List<OrderVO> getAllOrders();
 
-				void paySuccess(Integer orderId, Double paid, Integer couponId);
+				void paySuccess(Long orderId, Double paid, Integer couponId);
 
-				void refundSuccess(Integer orderId);
+				void refundSuccess(Long orderId);
 
-				Boolean checkPaySuccess(Integer orderId);
+				Boolean checkPaySuccess(Long orderId);
 				void cancelUnpaidOrders();
 }

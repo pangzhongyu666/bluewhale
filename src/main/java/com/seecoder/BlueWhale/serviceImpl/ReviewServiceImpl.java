@@ -1,5 +1,6 @@
 package com.seecoder.BlueWhale.serviceImpl;
 
+import com.seecoder.BlueWhale.exception.BlueWhaleException;
 import com.seecoder.BlueWhale.po.Product;
 import com.seecoder.BlueWhale.po.Review;
 import com.seecoder.BlueWhale.po.Store;
@@ -15,7 +16,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -39,17 +42,32 @@ public class ReviewServiceImpl implements ReviewService {
 				public List<ReviewVO> getReviews(Integer productId) {//获取商品评论
 								//从redis hash缓存中获取
 								String key = "reviewsOfProduct" + productId;
-								List<ReviewVO> reviewList = (List<ReviewVO>) redisTemplate.opsForHash().get(key, "reviewList");
-								if(reviewList != null){
-												logger.info("从redis缓存中获取评论" + productId);
-												return reviewList;
+
+								//如果缓存中存在，则直接返回
+								if(redisTemplate.hasKey(key)){
+												logger.info("从redis中获取评论");
+												List<ReviewVO> reviewVOs = new ArrayList<>();
+												for(Object o : redisTemplate.opsForHash().values(key)){
+																ReviewVO reviewVO = (ReviewVO) o;
+																reviewVO.setReviewImages(reviewVO.getReviewImagesForRedis());
+																reviewVO.setReviewImagesForRedis(null);
+																reviewVOs.add(reviewVO);
+												}
+												return reviewVOs;
 								}
-								//从数据库中获取
-								reviewList = reviewRepository.findByProductId(productId).stream().map(Review::toVO).collect(Collectors.toList());
-								//放入redis hash缓存中
-								redisTemplate.opsForHash().put(key, "reviewList", reviewList);
-								logger.info("从数据库中获取评论" + productId);
-								return reviewList;
+
+								//如果缓存中不存在，则从数据库中获取
+								List<Review> reviews = reviewRepository.findByProductId(productId);
+								//将评论存入redis hash缓存中
+								List<ReviewVO> reviewVOs = new ArrayList<>();
+								for(Review review : reviews){
+												ReviewVO reviewVO = review.toVO();
+												reviewVO.setReviewImages(null);
+												redisTemplate.opsForHash().put(key, reviewVO.getReviewId() + "", reviewVO);
+												reviewVOs.add(reviewVO);
+								}
+
+								return reviews.stream().map(Review::toVO).collect(Collectors.toList());
 				}
 
 				@Override
@@ -59,13 +77,20 @@ public class ReviewServiceImpl implements ReviewService {
 
 				@Override
 				public Boolean createReview(ReviewVO reviewVO) {
+								String key = "reviewsOfProduct" + reviewVO.getProductId();
 								if(reviewVO.getParentId() == null){
 												reviewVO.setParentId(0);//防止父评论id为空
 								}
 								Review review = reviewVO.toPO();
 								reviewRepository.save(review);
+
 								if(reviewVO.getParentId() != 0){//子评论不计入更新评分
 												return true;
+								}else{
+												//将评论存入redis hash缓存中
+												ReviewVO reviewVO1 = review.toVO();
+												reviewVO1.setReviewImages(null);
+												redisTemplate.opsForHash().put(key, reviewVO1.getReviewId() + "", reviewVO1);
 								}
 								Product product = productRepository.findByProductId(reviewVO.getProductId());
 								updateReview(product);
@@ -74,7 +99,7 @@ public class ReviewServiceImpl implements ReviewService {
 								logger.info("创建评论" + review.getReviewId());
 								return true;
 				}
-
+				@Transactional
 				public void updateReview(Store store) {
 								List<ProductVO> productList = storeService.getOneStoreProducts(store.getStoreId());
 								double storeRating = productList//商店评分
@@ -96,8 +121,9 @@ public class ReviewServiceImpl implements ReviewService {
 								//删除redis缓存
 								String key = "StoreInfo" + store.getStoreId();
 								redisTemplate.delete(key);
+								redisTemplate.opsForHash().delete("AllStores", store.getStoreId() + "", store.toVO());
 				}
-
+				@Transactional
 				public void updateReview(Product product) {
 								List<Review> reviewList = reviewRepository.findByProductId(product.getProductId());
 								double productRating = reviewList//商品评分

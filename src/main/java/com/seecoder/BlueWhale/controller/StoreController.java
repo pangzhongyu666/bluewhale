@@ -19,6 +19,11 @@ public class StoreController {
 				public ResultVO<Boolean> create(@RequestBody StoreVO storeVO){
 								return ResultVO.buildSuccess(storeService.create(storeVO));
 				}
+
+				@PutMapping("/update")
+				public ResultVO<Boolean> update(@RequestBody StoreVO storeVO){
+								return ResultVO.buildSuccess(storeService.update(storeVO));
+				}
 				@GetMapping("/getInfo/{storeId}")
 				public ResultVO<StoreVO> getInfo(@PathVariable(value="storeId")Integer storeId){
 								return ResultVO.buildSuccess(storeService.getInfo(storeId));
