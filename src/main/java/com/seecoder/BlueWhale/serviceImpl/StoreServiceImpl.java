@@ -77,10 +77,10 @@ public class StoreServiceImpl implements StoreService {
 								//缓存穿透
 								//StoreVO storeVO = queryWithPassThrough(storeId);
 								//缓存击穿
-								//StoreVO storeVO = queryWithMutex(storeId);
+								StoreVO storeVO = queryWithMutex(storeId);
 
 								//逻辑过期
-								StoreVO storeVO = queryWithLogicalExpire(storeId);
+								//StoreVO storeVO = queryWithLogicalExpire(storeId);
 
 								if(storeVO == null){
 												throw BlueWhaleException.storeNotExists();

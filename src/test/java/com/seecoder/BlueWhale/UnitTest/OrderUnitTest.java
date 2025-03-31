@@ -86,11 +86,11 @@ public class OrderUnitTest {
 				@Test
 				public void testUpdateOrderInformation() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setState(OrderStateEnum.UNSEND);
 
 								OrderVO orderVO = new OrderVO();
-								orderVO.setOrderId(1);
+								orderVO.setOrderId(1L);
 								orderVO.setState(OrderStateEnum.UNGET);
 
 								when(orderRepository.findById(orderVO.getOrderId())).thenReturn(Optional.of(order));
@@ -103,9 +103,9 @@ public class OrderUnitTest {
 				@Test
 				public void testGetUserOrders() {
 								Order order1 = new Order();
-								order1.setOrderId(1);
+								order1.setOrderId(1L);
 								Order order2 = new Order();
-								order2.setOrderId(2);
+								order2.setOrderId(2L);
 
 								when(orderRepository.findByUserId(1)).thenReturn(Arrays.asList(order1, order2));
 
@@ -116,9 +116,9 @@ public class OrderUnitTest {
 				@Test
 				public void testGetStoreOrders() {
 								Order order1 = new Order();
-								order1.setOrderId(1);
+								order1.setOrderId(1L);
 								Order order2 = new Order();
-								order2.setOrderId(2);
+								order2.setOrderId(2L);
 
 								when(orderRepository.findByStoreId(1)).thenReturn(Arrays.asList(order1, order2));
 
@@ -130,9 +130,9 @@ public class OrderUnitTest {
 				@Test
 				public void testGetProductOrders() {
 								Order order1 = new Order();
-								order1.setOrderId(1);
+								order1.setOrderId(1L);
 								Order order2 = new Order();
-								order2.setOrderId(2);
+								order2.setOrderId(2L);
 
 								when(orderRepository.findByProductId(1)).thenReturn(Arrays.asList(order1, order2));
 
@@ -144,9 +144,9 @@ public class OrderUnitTest {
 				@Test
 				public void testGetAllOrders() {
 								Order order1 = new Order();
-								order1.setOrderId(1);
+								order1.setOrderId(1L);
 								Order order2 = new Order();
-								order2.setOrderId(2);
+								order2.setOrderId(2L);
 
 								when(orderRepository.findAll()).thenReturn(Arrays.asList(order1, order2));
 
@@ -158,28 +158,28 @@ public class OrderUnitTest {
 				@Test
 				public void testCheckPaySuccess() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setState(OrderStateEnum.UNSEND);
 
-								when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+								when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 
-								Boolean isPaid = orderService.checkPaySuccess(1);
+								Boolean isPaid = orderService.checkPaySuccess(1L);
 								assertTrue(isPaid);
-								verify(orderRepository, times(1)).findById(1);
+								verify(orderRepository, times(1)).findById(1L);
 				}
 
 				@Test(expected = BlueWhaleException.class)
 				public void testCheckPaySuccess_OrderNotExists() {
-								when(orderRepository.findById(1)).thenReturn(Optional.empty());
+								when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-								orderService.checkPaySuccess(1);
+								orderService.checkPaySuccess(1L);
 
-								verify(orderRepository, times(1)).findById(1);
+								verify(orderRepository, times(1)).findById(1L);
 				}
 				@Test
 				public void testPaySuccess() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setDeliveryOption(DeliveryEnum.DELIVERY);
 
 								Coupon coupon = new Coupon();
@@ -200,7 +200,7 @@ public class OrderUnitTest {
 				@Test
 				public void testRefundSuccess() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setProductId(1);
 								order.setQuantity(2);
 
@@ -227,7 +227,7 @@ public class OrderUnitTest {
 				@Test
 				public void testCancelUnpaidOrders() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setState(OrderStateEnum.UNPAID);
 								order.setCreateTime(new Date(System.currentTimeMillis() - 15L * 24 * 60 * 60 * 1000)); // 15 days ago
 								order.setProductId(1);

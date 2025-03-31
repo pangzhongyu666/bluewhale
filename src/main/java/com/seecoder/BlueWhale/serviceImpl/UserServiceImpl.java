@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -37,6 +38,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     SecurityUtil securityUtil;
+
+    @Autowired
+    RedisTemplate redisTemplate;
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
 
@@ -77,7 +81,18 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserVO getInformation() {
         User user=securityUtil.getCurrentUser();
-        return user.toVO();
+        return getUserInformation(user.getId());
+    }
+    @Override
+    public UserVO getUserInformation(Integer userId) {
+        // 从redis中获取用户信息
+        UserVO userVO = (UserVO) redisTemplate.opsForValue().get("UserInfo" + userId);
+        if (userVO != null) {
+            return userVO;
+        }
+        UserVO userVo = userRepository.getOne(userId).toVO();
+        redisTemplate.opsForValue().set("UserInfo" + userId, userVo);
+        return userVo;
     }
 
     @Override
@@ -93,14 +108,13 @@ public class UserServiceImpl implements UserService {
             user.setAddress(userVO.getAddress());
         }
         userRepository.save(user);
+        // 删除redis中的用户信息
+        redisTemplate.delete("UserInfo" + user.getId());
         logger.info("用户" + user.getId() + "信息更新");
         return true;
     }
 
-    @Override
-    public UserVO getUserInformation(Integer userId) {
-        return userRepository.getOne(userId).toVO();        
-    }
+
 
 
 

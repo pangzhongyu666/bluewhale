@@ -1,5 +1,5 @@
 package com.seecoder.BlueWhale.serviceImpl;
-
+import org.springframework.aop.framework.AopContext;
 import com.seecoder.BlueWhale.exception.BlueWhaleException;
 import com.seecoder.BlueWhale.po.Product;
 import com.seecoder.BlueWhale.po.Review;
@@ -92,10 +92,12 @@ public class ReviewServiceImpl implements ReviewService {
 												reviewVO1.setReviewImages(null);
 												redisTemplate.opsForHash().put(key, reviewVO1.getReviewId() + "", reviewVO1);
 								}
+								ReviewService Proxy = (ReviewService)AopContext.currentProxy();
+
 								Product product = productRepository.findByProductId(reviewVO.getProductId());
-								updateReview(product);
+								Proxy.updateReview(product);
 								Store store = storeRepository.findByStoreId(product.getStoreId());
-								updateReview(store);
+								Proxy.updateReview(store);
 								logger.info("创建评论" + review.getReviewId());
 								return true;
 				}

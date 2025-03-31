@@ -121,7 +121,7 @@ public class CouponUnitTest {
 				@Test
 				public void testCouponApply() {
 								Order order = new Order();
-								order.setOrderId(1);
+								order.setOrderId(1L);
 								order.setPaid(100.0);
 								order.setStoreId(1);
 
@@ -137,13 +137,13 @@ public class CouponUnitTest {
 								couponGroup.setFillAmount(50.0);
 								couponGroup.setReductionAmount(10.0);
 
-								when(orderRepository.findById(1)).thenReturn(Optional.of(order));
+								when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
 								when(couponRepository.findById(1)).thenReturn(Optional.of(coupon));
 								when(couponGroupRepository.findById(1)).thenReturn(Optional.of(couponGroup));
 
-								Double discount = couponService.couponApply(1, 1);
+								Double discount = couponService.couponApply(1L, 1);
 								assertEquals(90.0, discount);
-								verify(orderRepository, times(1)).findById(1);
+								verify(orderRepository, times(1)).findById(1L);
 								verify(couponRepository, times(1)).findById(1);
 								verify(couponGroupRepository, times(1)).findById(1);
 				}

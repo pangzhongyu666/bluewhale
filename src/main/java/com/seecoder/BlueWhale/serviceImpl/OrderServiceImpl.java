@@ -43,6 +43,8 @@ public class OrderServiceImpl implements OrderService {
 				@Autowired
 				CouponRepository couponRepository;
 
+
+
 				@Autowired
 				RedisIdWorker redisIdWorker;
 				private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);

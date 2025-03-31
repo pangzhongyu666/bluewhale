@@ -33,15 +33,22 @@ public class ProductServiceImpl implements ProductService {
 
 				@Override
 				public Boolean create(ProductVO productVO){
+
 								Product newproduct = productVO.toPO();
 								productRepository.save(newproduct);
+
+								String key = "ProductInfo" + newproduct.getProductId();
+
+								// 将商品信息存入redis
+								productVO = newproduct.toVO();
+								productVO.setProductImages(null);
+								redisTemplate.opsForValue().set(key, productVO);
 								logger.info("创建商品" + productVO.getName() + ",id为" + newproduct.getProductId());
 								return true;
 				}
 
 
 				@Override
-
 				public ProductVO getInfo(Integer productId) {
 								String key = "ProductInfo" + productId;
 								// 先从redis中获取商品信息
@@ -74,21 +81,20 @@ public class ProductServiceImpl implements ProductService {
 				@Override
 				@Transactional
 				public Boolean updateInformation(ProductVO productVO) {
-								Product product = productRepository.findByProductId(productVO.getProductId());
-								if(product==null){
-												throw BlueWhaleException.productNotExists();
-								}
+								//redis缓存
+								ProductVO productInfo = getInfo(productVO.getProductId());
+
 								//更新传入的信息中不为null的项
-								Optional.ofNullable(productVO.getInventory()).ifPresent(product::setInventory);
-								Optional.ofNullable(productVO.getPrice()).ifPresent(product::setPrice);
-								Optional.ofNullable(productVO.getType()).ifPresent(product::setType);
-								Optional.ofNullable(productVO.getName()).ifPresent(product::setName);
-								Optional.ofNullable(productVO.getDescription()).ifPresent(product::setDescription);
-								productRepository.save(product);
+								Optional.ofNullable(productVO.getInventory()).ifPresent(productInfo::setInventory);
+								Optional.ofNullable(productVO.getPrice()).ifPresent(productInfo::setPrice);
+								Optional.ofNullable(productVO.getType()).ifPresent(productInfo::setType);
+								Optional.ofNullable(productVO.getName()).ifPresent(productInfo::setName);
+								Optional.ofNullable(productVO.getDescription()).ifPresent(productInfo::setDescription);
+								productRepository.save(productInfo.toPO());
 								logger.info("更新商品信息");
 
 								//删除redis缓存
-								String key = "ProductInfo" + product.getProductId();
+								String key = "ProductInfo" + productInfo.getProductId();
 								redisTemplate.delete(key);
 								return true;
 				}
