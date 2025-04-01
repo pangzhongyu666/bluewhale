@@ -8,6 +8,7 @@ import com.seecoder.BlueWhale.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -57,6 +58,11 @@ public class UserController {
     @PostMapping
     public ResultVO<Boolean> updateInformation(@RequestBody UserVO userVO){
         return ResultVO.buildSuccess(userService.updateInformation(userVO));
+    }
+
+    @GetMapping("/getPrivileges")
+    public ResultVO<List<String>> getCurrUserPrivileges(){
+        return ResultVO.buildSuccess(userService.getCurrUserPrivileges());
     }
 
     @PostMapping("/sign")

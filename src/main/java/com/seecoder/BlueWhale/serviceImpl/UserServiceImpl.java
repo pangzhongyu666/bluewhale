@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 注册登录功能实现
@@ -52,15 +53,19 @@ public class UserServiceImpl implements UserService {
         if (user != null) {
             throw BlueWhaleException.phoneAlreadyExists();
         }
+        if(user.getRole() != RoleEnum.CUSTOMER && user.getRole() != RoleEnum.STAFF) {
+            throw new BlueWhaleException("无权限");
+        }
         User newUser = userVO.toPO();
         newUser.setCreateTime(new Date());
 
         int userId = userRepository.save(newUser).getId();
-        if(newUser.getRole() == RoleEnum.CUSTOMER) {
-            CartVO cartVO = new CartVO();
-            cartVO.setUserId(userId);
-            cartService.create(cartVO);
+        if(newUser.getRole() != RoleEnum.CUSTOMER) {
         }
+
+        CartVO cartVO = new CartVO();
+        cartVO.setUserId(userId);
+        cartService.create(cartVO);
         logger.info("新用户" + newUser.getId() + "注册");
         return true;
     }
@@ -137,6 +142,19 @@ public class UserServiceImpl implements UserService {
         logger.info("用户" + user.getId() + "签到");
         return Boolean.TRUE;
     }
+
+    @Override
+    public List<String> getCurrUserPrivileges() {
+        User user = securityUtil.getCurrentUser();
+        List<String> privileges = userRepository.findCurrUserPrivilegesById(user.getId());
+        if(privileges == null || privileges.isEmpty()) {
+            throw new BlueWhaleException("获取权限错误");
+        }
+        //添加至redis
+        //redisTemplate.opsForValue().set("UserPrivileges" + user.getId(), privileges);
+        return privileges;
+    }
+
 
 
 }

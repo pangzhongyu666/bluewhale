@@ -25,7 +25,6 @@ public class MyWebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/**")
                 //.excludePathPatterns("/**")  //测试用
-                .excludePathPatterns("/api/stores/getAllStores")
                 .excludePathPatterns("/api/users/register")
                 .excludePathPatterns("/api/users/login")
                 .excludePathPatterns("/api/ali/*")

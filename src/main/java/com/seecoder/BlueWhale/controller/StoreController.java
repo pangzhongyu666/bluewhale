@@ -1,5 +1,6 @@
 package com.seecoder.BlueWhale.controller;
 
+import com.seecoder.BlueWhale.anno.PreAuthorize;
 import com.seecoder.BlueWhale.service.StoreService;
 import com.seecoder.BlueWhale.vo.ProductVO;
 import com.seecoder.BlueWhale.vo.ResultVO;
@@ -15,6 +16,7 @@ public class StoreController {
 				@Autowired
 				StoreService storeService;
 
+				@PreAuthorize("/stores/create")
 				@PostMapping("/create")
 				public ResultVO<Boolean> create(@RequestBody StoreVO storeVO){
 								return ResultVO.buildSuccess(storeService.create(storeVO));
@@ -25,6 +27,7 @@ public class StoreController {
 								return ResultVO.buildSuccess(storeService.getStoreRank());
 				}
 
+				@PreAuthorize("/stores/update")
 				@PutMapping("/update")
 				public ResultVO<Boolean> update(@RequestBody StoreVO storeVO){
 								return ResultVO.buildSuccess(storeService.update(storeVO));
@@ -40,6 +43,7 @@ public class StoreController {
 				}
 
 
+				@PreAuthorize("/stores/getAllStores")
 				@GetMapping("/getAllStores")
 				public ResultVO<List<StoreVO>> getAllStores(){
 								return ResultVO.buildSuccess(storeService.getAllStores());
