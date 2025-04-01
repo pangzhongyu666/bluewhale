@@ -130,6 +130,7 @@ public class OrderServiceImpl implements OrderService {
 
 				@Override
 				public void paySuccess(Long orderId, Double paid, Integer couponId) {
+
 								Order order = orderRepository.findById(orderId).get();
 								if(order.getDeliveryOption() == DeliveryEnum.DELIVERY)
 												order.setState(OrderStateEnum.UNSEND);//送货上门则变状态为未送货
@@ -173,30 +174,37 @@ public class OrderServiceImpl implements OrderService {
 								return order.getState() != OrderStateEnum.UNPAID;//不是未支付表示已支付
 				}
 
+//				@Override
+//				@Scheduled(fixedRate = 60000) // 每分钟执行一次
+//				public void cancelUnpaidOrders() {
+//								logger.info("执行定时取消未支付订单任务");
+//								List<Order> unpaidOrders = orderRepository.findByState(OrderStateEnum.UNPAID);
+//								Date cutoffDate = new Date(System.currentTimeMillis() - 14L * 24 * 60 * 60 * 1000); // 14天前的时间
+//
+//								for (Order order : unpaidOrders) {
+//												if(order.getCreateTime().before(cutoffDate)){
+//																order.setState(OrderStateEnum.CANCELLED);
+//
+//																int quantity = order.getQuantity();
+//																Product product =  productRepository.findByProductId(order.getProductId());
+//																int productSales = product.getSales() - quantity;
+//																product.setSales(productSales);//商品销量回调
+//																Store store = storeRepository.findByStoreId(product.getStoreId());
+//																int storeSales =  store.getSales() - quantity;
+//																store.setSales(storeSales);//商店销量回调
+//																logger.info("已取消过期订单" + order.getOrderId());
+//
+//																productRepository.save(product);
+//																storeRepository.save(store);
+//																orderRepository.save(order);
+//												}
+//								}
+//				}
+
 				@Override
-				@Scheduled(fixedRate = 60000) // 每分钟执行一次
 				public void cancelUnpaidOrders() {
 								logger.info("执行定时取消未支付订单任务");
-								List<Order> unpaidOrders = orderRepository.findByState(OrderStateEnum.UNPAID);
-								Date cutoffDate = new Date(System.currentTimeMillis() - 14L * 24 * 60 * 60 * 1000); // 14天前的时间
+								//RabbitMQ实现定时取消未支付订单
 
-								for (Order order : unpaidOrders) {
-												if(order.getCreateTime().before(cutoffDate)){
-																order.setState(OrderStateEnum.CANCELLED);
-
-																int quantity = order.getQuantity();
-																Product product =  productRepository.findByProductId(order.getProductId());
-																int productSales = product.getSales() - quantity;
-																product.setSales(productSales);//商品销量回调
-																Store store = storeRepository.findByStoreId(product.getStoreId());
-																int storeSales =  store.getSales() - quantity;
-																store.setSales(storeSales);//商店销量回调
-																logger.info("已取消过期订单" + order.getOrderId());
-
-																productRepository.save(product);
-																storeRepository.save(store);
-																orderRepository.save(order);
-												}
-								}
 				}
 }

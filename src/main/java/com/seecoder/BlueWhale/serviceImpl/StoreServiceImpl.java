@@ -50,8 +50,24 @@ public class StoreServiceImpl implements StoreService {
 								redisTemplate.opsForValue().set("StoreInfo" + newstore.getStoreId(), newstore.toVO());
 								redisTemplate.opsForHash().put("AllStores", newstore.getStoreId() + "", newstore.toVO());
 								logger.info("创建商店" + newstore.getStoreId());
+
 								return true;
 
+				}
+				//获取商店排行榜
+				@Override
+				public List<StoreVO> getStoreRank() {
+								//从redis中获取
+								List<StoreVO> storesInRedis = new ArrayList<>();
+								Set<String> top10 = redisTemplate.opsForZSet().range("StoreRank", 0, 9);
+
+								if (top10 != null) {
+												for(String storeId : top10){
+																StoreVO storeVO = getInfo(Integer.valueOf(storeId));
+																storesInRedis.add(storeVO);
+												}
+								}
+								return storesInRedis;
 				}
 				@Override
 				public List<StoreVO> getAllStores() {

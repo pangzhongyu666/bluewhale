@@ -12,4 +12,6 @@ public interface UserService {
     Boolean updateInformation(UserVO userVO);
 
     UserVO getUserInformation(Integer userId);
+
+    Boolean sign();
 }

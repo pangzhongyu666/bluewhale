@@ -21,6 +21,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -115,7 +117,26 @@ public class UserServiceImpl implements UserService {
     }
 
 
+    @Override
+    public Boolean sign(){//签到
+        User user=securityUtil.getCurrentUser();
 
+        //获取日期
+        LocalDateTime now = LocalDateTime.now();
+
+        //拼接key
+        String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
+        String key = "sign:" + user.getId() + keySuffix;
+        //获取今天是本月的第几天
+        int dayOfMonth = now.getDayOfMonth();
+        //写入redis
+        Boolean result = redisTemplate.opsForValue().setBit(key, dayOfMonth - 1, true);
+        if(Boolean.FALSE.equals(result)){
+            throw new BlueWhaleException("签到失败");
+        }
+        logger.info("用户" + user.getId() + "签到");
+        return Boolean.TRUE;
+    }
 
 
 }

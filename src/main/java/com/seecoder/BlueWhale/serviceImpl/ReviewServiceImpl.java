@@ -123,7 +123,10 @@ public class ReviewServiceImpl implements ReviewService {
 								//删除redis缓存
 								String key = "StoreInfo" + store.getStoreId();
 								redisTemplate.delete(key);
-								redisTemplate.opsForHash().delete("AllStores", store.getStoreId() + "", store.toVO());
+								redisTemplate.opsForHash().delete("AllStores", store.getStoreId() + "");
+
+								//更新商店排行榜
+								redisTemplate.opsForZSet().add("StoreRank", store.getStoreId() + "", storeRating);
 				}
 				@Transactional
 				public void updateReview(Product product) {

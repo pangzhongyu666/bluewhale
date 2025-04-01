@@ -17,4 +17,6 @@ public interface StoreService {
 				StoreVO getInfo(Integer storeId);
 
 				Boolean update(StoreVO storeVO);
+
+				public List<StoreVO> getStoreRank();
 }

@@ -58,4 +58,9 @@ public class UserController {
     public ResultVO<Boolean> updateInformation(@RequestBody UserVO userVO){
         return ResultVO.buildSuccess(userService.updateInformation(userVO));
     }
+
+    @PostMapping("/sign")
+    public ResultVO<Boolean> sign(){
+        return ResultVO.buildSuccess(userService.sign());
+    }
 }

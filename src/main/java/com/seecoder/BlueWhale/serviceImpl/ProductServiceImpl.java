@@ -43,7 +43,9 @@ public class ProductServiceImpl implements ProductService {
 								productVO = newproduct.toVO();
 								productVO.setProductImages(null);
 								redisTemplate.opsForValue().set(key, productVO);
+
 								logger.info("创建商品" + productVO.getName() + ",id为" + newproduct.getProductId());
+
 								return true;
 				}
 
@@ -98,6 +100,8 @@ public class ProductServiceImpl implements ProductService {
 								redisTemplate.delete(key);
 								return true;
 				}
+
+
 
 				@Override
 				public List<ProductVO> searchProducts(String name, ProductTypeEnum type, Integer minPrice, Integer maxPrice, Integer page, Integer size) {

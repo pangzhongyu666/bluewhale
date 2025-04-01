@@ -20,6 +20,11 @@ public class StoreController {
 								return ResultVO.buildSuccess(storeService.create(storeVO));
 				}
 
+				@GetMapping("/getStoreRankTop10")
+				public ResultVO<List<StoreVO>> getStoreRank(){
+								return ResultVO.buildSuccess(storeService.getStoreRank());
+				}
+
 				@PutMapping("/update")
 				public ResultVO<Boolean> update(@RequestBody StoreVO storeVO){
 								return ResultVO.buildSuccess(storeService.update(storeVO));
