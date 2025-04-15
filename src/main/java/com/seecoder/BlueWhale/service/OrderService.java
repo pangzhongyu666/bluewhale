@@ -6,8 +6,8 @@ import java.util.List;
 
 public interface OrderService {
 
-				OrderVO create (OrderVO orderVO);
-
+				Boolean create (OrderVO orderVO);
+				void createOrder(OrderVO orderVO);
 				List<OrderVO> getUserOrders(Integer userId);
 
 				List<OrderVO> getStoreOrders(Integer storeId);
@@ -22,5 +22,7 @@ public interface OrderService {
 				void refundSuccess(Long orderId);
 
 				Boolean checkPaySuccess(Long orderId);
-				void cancelUnpaidOrders();
+
+
+				void cancelUnpaidOrders(Long orderId);
 }

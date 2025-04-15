@@ -21,6 +21,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -59,13 +60,8 @@ public class CouponServiceImpl implements CouponService {
     @Autowired
     RedissonClient redissonClient;
 
-    //private BlockingQueue<CouponVO> couponTask = new ArrayBlockingQueue<>(1000 * 1000);
-    private static final ExecutorService couponClaimExecutor = Executors.newSingleThreadExecutor();
-    @PostConstruct
-    private void init(){
-        couponClaimExecutor.submit(new CouponClaimTask());
-    }
-
+    @Autowired
+    RabbitTemplate rabbitTemplate;
     //lua脚本
     private static final DefaultRedisScript<Long> CHECKSTOCKANDGOT_SCRIPT;
     static {
@@ -141,32 +137,6 @@ public class CouponServiceImpl implements CouponService {
 								return context.executeStrategy(order.getPaid());//计算价格后返回
     }
 
-//    @Override
-//    public Boolean claimCoupon(Integer userId, Integer couponGroupId) {
-//        //执行lua脚本
-//        Long res = (Long) redisTemplate.execute(
-//                CHECKSTOCKANDGOT_SCRIPT,
-//                Collections.emptyList(),
-//                couponGroupId.toString(),
-//                userId.toString()
-//        );
-//        int r = res.intValue();
-//        if (r == 0) {
-//            //有购买资格，将信息存入消息队列
-//
-//            CouponVO couponVO = new CouponVO();
-//            couponVO.setCouponGroupId(couponGroupId);
-//            couponVO.setUserId(userId);
-//            couponVO.setState(CouponStateEnum.AVAILABLE);
-//            couponTask.add(couponVO);
-//
-//            proxy = (CouponService)AopContext.currentProxy();
-//
-//            return true;
-//        } else {
-//            throw new BlueWhaleException(r == 1 ? "优惠券组库存不足" : "用户已经领取过该优惠券组");
-//        }
-//    }
     @Override
     public Boolean claimCoupon(Integer userId, Integer couponGroupId) {
         //执行lua脚本
@@ -179,75 +149,21 @@ public class CouponServiceImpl implements CouponService {
         int r = res.intValue();
         if (r == 0) {
             proxy = (CouponService)AopContext.currentProxy();
+
+            CouponVO couponVO = new CouponVO();
+            couponVO.setCouponGroupId(couponGroupId);
+            couponVO.setUserId(userId);
+            couponVO.setState(CouponStateEnum.AVAILABLE);
+            couponVO.setStoreId(0);
+
+            //异步处理优惠券
+            rabbitTemplate.convertAndSend("coupon.exchange", "coupon.claim", couponVO);
+
             return true;
         } else {
             throw new BlueWhaleException(r == 1 ? "优惠券组库存不足" : "用户已经领取过该优惠券组");
         }
 				}
-    private class CouponClaimTask implements Runnable {
-        @Override
-        public void run() {
-            while (true){
-																try {
-																				//CouponVO coupon = couponTask.take();
-                    //获取消息队列 XREADGROUP group g1 c1 count 1 block 2000 streams stream.coupon >
-                    List<MapRecord<String, Object, Object>> list
-                     = redisTemplate.opsForStream() .read(Consumer.from("g1", "c1"),
-                                    StreamReadOptions.empty().count(1).block(Duration.ofSeconds(2)),
-                                    StreamOffset.create("stream.coupon", ReadOffset.lastConsumed()));
-                    //判断获取消息是否成功
-                    if(list == null || list.isEmpty()){
-                        //获取消息队列失败
-                        continue;
-                    }
-                    //解析消息
-                    MapRecord<String, Object, Object> record = list.get(0);
-                    Map<Object, Object> value = record.getValue();
-                    CouponVO couponVO = new CouponVO();
-                    couponVO.setCouponGroupId(Integer.valueOf(value.get("couponGroupId").toString()));
-                    couponVO.setUserId(Integer.valueOf(value.get("userId").toString()));
-                    couponVO.setState(CouponStateEnum.AVAILABLE);
-                    //获取消息成功，执行任务
-                    handleCoupon(couponVO);
-                    //ACK确认 SACK stream.coupon g1 id
-                    redisTemplate.opsForStream().acknowledge("stream.coupon", "g1", record.getId());
-																} catch (Exception e) {
-                    logger.error("获取优惠券消息失败", e);
-                    handlePendingList();
-																}
-            }
-        }
-        private void handlePendingList() {
-            while (true){
-                try {
-                    //CouponVO coupon = couponTask.take();
-                    //获取pending list XREADGROUP group g1 c1 count 1 streams stream.coupon >
-                    List<MapRecord<String, Object, Object>> list
-                            = redisTemplate.opsForStream() .read(Consumer.from("g1", "c1"),
-                            StreamReadOptions.empty().count(1),
-                            StreamOffset.create("stream.coupon", ReadOffset.from("0")));
-                    //判断获取消息是否成功
-                    if(list == null || list.isEmpty()){
-                        //获取失败, 说明pending list没有消息，直接返回
-                        break;
-                    }
-                    //解析消息
-                    MapRecord<String, Object, Object> record = list.get(0);
-                    Map<Object, Object> value = record.getValue();
-                    CouponVO couponVO = new CouponVO();
-                    couponVO.setCouponGroupId(Integer.valueOf(value.get("couponGroupId").toString()));
-                    couponVO.setUserId(Integer.valueOf(value.get("userId").toString()));
-                    couponVO.setState(CouponStateEnum.AVAILABLE);
-                    //获取消息成功，执行任务
-                    handleCoupon(couponVO);
-                    //ACK确认 SACK stream.coupon g1 id
-                    redisTemplate.opsForStream().acknowledge("stream.coupon", "g1", record.getId());
-                } catch (Exception e) {
-                    logger.error("获取优惠券消息失败", e);
-                }
-            }
-        }
-    }
 
 //    @Override
 //    public Boolean claimCoupon(Integer userId, Integer couponGroupId) {
@@ -267,29 +183,6 @@ public class CouponServiceImpl implements CouponService {
 //        //    CouponService proxy = (CouponService)AopContext.currentProxy();
 //        //    return proxy.checkAndClaimCoupon(userId, couponGroupId);
 //        //}
-//
-//        //redis分布式锁
-//        //RedisLock lock = new RedisLock("Coupon:" + userId, redisTemplate);
-//
-//        //redisson锁
-//        RLock lock = redissonClient.getLock("Coupon:" + userId);
-//        boolean lockSuccess = lock.tryLock();
-//
-//        if(!lockSuccess){
-//            throw new BlueWhaleException("获取锁失败，一个用户只能领取一张同一优惠券组的优惠券");
-//        }
-//        try {
-//            logger.info("获取锁成功");
-//            CouponService proxy = (CouponService)AopContext.currentProxy();
-//            return proxy.checkAndClaimCoupon(userId, couponGroupId);
-//        } catch (IllegalStateException e) {
-//            throw new RuntimeException(e);
-//        } finally {
-//            logger.info("释放锁");
-//            lock.unlock();
-//        }
-//
-//    }
 
     public void handleCoupon(CouponVO couponVO) {
 								//redis分布式锁
@@ -303,12 +196,12 @@ public class CouponServiceImpl implements CouponService {
             throw new BlueWhaleException("获取锁失败，一个用户只能领取一张同一优惠券组的优惠券");
         }
         try {
-            logger.info("获取锁成功");
+            //logger.info("获取锁成功");
             proxy.checkAndClaimCoupon(couponVO);
         } catch (IllegalStateException e) {
-            throw new RuntimeException(e);
+            throw new BlueWhaleException("保存到数据库失败");
         } finally {
-            logger.info("释放锁");
+            //logger.info("释放锁");
             lock.unlock();
         }
 
@@ -316,17 +209,17 @@ public class CouponServiceImpl implements CouponService {
     @Transactional
     public Boolean checkAndClaimCoupon(CouponVO couponVO) {
         int userId = couponVO.getUserId();
-        checkCoupon(userId, couponVO.getCouponGroupId());
         int couponGroupId = couponVO.getCouponGroupId();
+        checkCoupon(userId, couponGroupId);
+
         int couponAmount = couponGroupRepository.deductStock(couponGroupId);
         if(couponAmount == 0){
             logger.info("优惠券组" + couponGroupId + "库存不足");
             throw new BlueWhaleException("优惠券不足");
         }
-        CouponGroup couponGroup = couponGroupRepository.findById(couponGroupId).get();
-        couponVO.setStoreId(couponGroup.getStoreId());
+
         couponRepository.save(couponVO.toPO());
-        logger.info("用户" + userId + "领取优惠券组" + couponGroupId + "中的优惠券");
+        //logger.info("用户" + userId + "领取优惠券组" + couponGroupId + "中的优惠券");
         return true;
     }
 

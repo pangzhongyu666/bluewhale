@@ -31,6 +31,6 @@ redis.call('decr', couponGroupKey)
 redis.call('sadd', userCouponKey, userId)
 
 -- 3.4 发送优惠券消息到stream流
-redis.call('xadd', 'stream.coupon', '*', 'couponGroupId', couponGroupId, 'userId', userId)
+-- redis.call('xadd', 'stream.coupon', '*', 'couponGroupId', couponGroupId, 'userId', userId)
 -- 成功
 return 0

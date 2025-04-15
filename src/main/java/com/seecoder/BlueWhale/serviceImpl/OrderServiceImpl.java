@@ -17,18 +17,14 @@ import com.seecoder.BlueWhale.util.RedisIdWorker;
 import com.seecoder.BlueWhale.vo.OrderVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,7 +39,10 @@ public class OrderServiceImpl implements OrderService {
 				@Autowired
 				CouponRepository couponRepository;
 
-
+				@Autowired
+				RedisTemplate redisTemplate;
+				@Autowired
+				RabbitTemplate rabbitTemplate;
 
 				@Autowired
 				RedisIdWorker redisIdWorker;
@@ -51,9 +50,8 @@ public class OrderServiceImpl implements OrderService {
 
 				@Override
 				@Transactional
-				public OrderVO create(OrderVO orderVO) {
+				public Boolean create(OrderVO orderVO) {
 								int quantity = orderVO.getQuantity();
-
 
 								int inventory =  productRepository.deductInventory(orderVO.getProductId(), quantity);
 								logger.info("库存剩余" + inventory);
@@ -61,14 +59,32 @@ public class OrderServiceImpl implements OrderService {
 												throw BlueWhaleException.productInventoryShort();
 								}
 
+								//写入消息队列
+								rabbitTemplate.convertAndSend("order.exchange", "order.create", orderVO);
+								logger.info("订单写入消息队列");
+
+								return true;
+				}
+
+				@Override
+				@Transactional
+				public void createOrder(OrderVO orderVO) {
+								int quantity = orderVO.getQuantity();
+
 								Product product = productRepository.findByProductId(orderVO.getProductId());
 								product.setSales((product.getSales() != null ? product.getSales() : 0) + quantity);
 								productRepository.save(product);
+								redisTemplate.delete("ProductInfo" + product.getProductId());
 
 								Store store = storeRepository.findByStoreId(product.getStoreId());
 								int storeSales = store.getSales()!=null ? store.getSales()+ quantity: quantity;
 								store.setSales(storeSales);//销量增加
 								storeRepository.save(store);
+								//删除redis缓存
+								String key = "StoreInfo" + store.getStoreId();
+								redisTemplate.delete(key);
+								redisTemplate.opsForHash().delete("AllStores", store.getStoreId() + "");
+
 
 								if(orderVO.getStoreId() == null){
 												orderVO.setStoreId(product.getStoreId());
@@ -78,8 +94,13 @@ public class OrderServiceImpl implements OrderService {
 								orderVO.setState(OrderStateEnum.UNPAID);
 								Order order = orderVO.toPO();
 								orderRepository.save(order);
+
+								//发送消息到延迟队列
+								rabbitTemplate.convertAndSend("order.delay.exchange", "order.delay", orderVO.getOrderId(), message -> {
+												message.getMessageProperties().setDelay(1000000);//过期时间为10000秒
+												return message;
+								});
 								logger.info("创建订单" + order.getOrderId() +"成功");
-								return order.toVO();
 				}
 
 				@Override
@@ -171,7 +192,9 @@ public class OrderServiceImpl implements OrderService {
 								if(order == null){
 												throw BlueWhaleException.orderNotExists();
 								}
-								return order.getState() != OrderStateEnum.UNPAID;//不是未支付表示已支付
+								return order.getState() != OrderStateEnum.UNPAID
+																&& order.getState() != OrderStateEnum.CANCELLED
+																&& order.getState() != OrderStateEnum.REFUND;//不是未支付表示已支付
 				}
 
 //				@Override
@@ -202,9 +225,26 @@ public class OrderServiceImpl implements OrderService {
 //				}
 
 				@Override
-				public void cancelUnpaidOrders() {
-								logger.info("执行定时取消未支付订单任务");
-								//RabbitMQ实现定时取消未支付订单
+				public void cancelUnpaidOrders(Long orderId) {
+								Order order = orderRepository.findById(orderId).orElse(null);
+								if(order == null || order.getState() != OrderStateEnum.UNPAID){
+												throw new BlueWhaleException("订单不存在或者已支付");
+								}
+								
+								//未支付
+								order.setState(OrderStateEnum.CANCELLED);
+								int quantity = order.getQuantity();
+								Product product =  productRepository.findByProductId(order.getProductId());
+								int productSales = product.getSales() - quantity;
+								product.setSales(productSales);//商品销量回调
+								product.setInventory(product.getInventory() + quantity);//商品库存回滚
+								Store store = storeRepository.findByStoreId(product.getStoreId());
+								int storeSales =  store.getSales() - quantity;
+								store.setSales(storeSales);//商店销量回调
+								logger.info("已取消过期订单" + order.getOrderId());
+								productRepository.save(product);
+								storeRepository.save(store);
+								orderRepository.save(order);
 
 				}
 }

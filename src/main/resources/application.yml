@@ -11,10 +11,10 @@ spring:
     port: 6379
     lecture:
       pool:
-        max-active: 8 # 最大连接数
-        max-idle: 8 # 最大空闲连接数
-        min-idle: 0 # 最小空闲连接数
-        max-wait: 100 # 最大等待时间
+        max-active: 200      # 最大连接数
+        max-idle: 50        # 最大空闲连接数
+        min-idle: 20        # 最小空闲连接数
+        max-wait: 5000      # 获取连接最大等待时间(ms)
   kafka:
     bootstrap-servers: localhost:9092
     #producer:
@@ -22,6 +22,36 @@ spring:
       auto-offset-reset: earliest # 重置偏移量为最早的偏移量,如果消费组id已经消费过了,该设置不会生效,需要重置消费组id,才能从头消费
     template:
       default-topic: kafka-test # 默认的topic
+  rabbitmq:
+    host: localhost
+    port: 567
+    virtual-host: /bluewhale
+    username: root
+    password: 123456
+    listener:
+      simple:
+        prefetch: 1 # 每次拉取的消息数量,处理完
+        concurrency: 10 # 消费者并发数量,处理完
+        max-concurrency: 100 # 消费者最大并发数量
+
+        acknowledgement-mode: auto # 消息确认模式,auto自动确认,manual手动确认,none不确认
+        retry:
+          enabled: true # 开启重试
+          max-attempts: 3 # 最大重试次数
+          initial-interval: 1000 # 重试间隔时间
+          mutiplier: 1 # 重试间隔时间倍数
+
+      template:
+        retry:
+          enabled: true # 开启重试
+          connection-retry:
+            enabled: true # 开启连接重试
+          max-attempts: 3 # 最大重试次数
+          initial-interval: 1000 # 重试间隔时间
+          max-interval: 10000 # 最大重试间隔时间
+    publisher-confirm-type: none # 开启消息确认,效率低,不建议使用
+    publisher-returns: false # 开启消息返回，效率低,不建议使用
+
 
 server:
   port: 8080

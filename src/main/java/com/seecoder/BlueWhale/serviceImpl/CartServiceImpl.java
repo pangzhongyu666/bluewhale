@@ -168,7 +168,6 @@ public class CartServiceImpl implements CartService {
                 orderVO.setUserId(userId);
                 orderVO.setPaid(product.getPrice() * quantity * 1.0);
                 orderVO.setState(OrderStateEnum.UNPAID);
-                orderIdList.add(orderService.create(orderVO).getOrderId());
                 productList.remove(index);
                 productCountList.remove(index);
                 totalPrice -= product.getPrice() * quantity;

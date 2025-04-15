@@ -23,5 +23,7 @@ public interface CouponService {
 
     CouponGroupVO getCouponGroupInfo(Integer couponGroupId);
 
+    void handleCoupon(CouponVO couponVO);
+
     Boolean checkAndClaimCoupon(CouponVO couponVO);
 }

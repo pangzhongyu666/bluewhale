@@ -17,7 +17,7 @@ public class OrderController {
 				OrderService orderService;
 
 				@PostMapping("/create")
-				public ResultVO<OrderVO> create(@RequestBody OrderVO orderVO){
+				public ResultVO<Boolean> create(@RequestBody OrderVO orderVO){
 								return ResultVO.buildSuccess(orderService.create(orderVO));
 				}
 
